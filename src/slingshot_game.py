@@ -35,7 +35,41 @@ AIMING = 0
 PROJECTILE_IN_MOTION = 1
 LEVEL_COMPLETE = 2
 GAME_OVER = 3
-WAITING_FOR_NEXT_SHOT = 4  # 新しいゲーム状態を追加
+WAITING_FOR_NEXT_SHOT = 4
+DIFFICULTY_SELECT = 5  # 難易度選択画面の状態を追加
+
+# 難易度設定
+DIFFICULTY_EASY = 0
+DIFFICULTY_NORMAL = 1
+DIFFICULTY_HARD = 2
+
+# 難易度ごとのパラメータ
+DIFFICULTY_PARAMS = {
+    DIFFICULTY_EASY: {
+        "gravity": 0.25,
+        "friction": 0.96,
+        "elasticity": 0.9,
+        "projectile_count": 7,
+        "power_factor": 5.0,  # 小さいほど強い
+        "target_distance_factor": 0.7  # 小さいほど近い
+    },
+    DIFFICULTY_NORMAL: {
+        "gravity": 0.3,
+        "friction": 0.97,
+        "elasticity": 0.85,
+        "projectile_count": 5,
+        "power_factor": 6.0,
+        "target_distance_factor": 1.0
+    },
+    DIFFICULTY_HARD: {
+        "gravity": 0.35,
+        "friction": 0.98,
+        "elasticity": 0.8,
+        "projectile_count": 3,
+        "power_factor": 7.0,
+        "target_distance_factor": 1.3
+    }
+}
 
 class Projectile:
     def __init__(self, x, y, radius=15):
@@ -416,40 +450,50 @@ class Slingshot:
         pygame.draw.rect(screen, metal_color, (self.x - 5, self.y + self.height//3, 10, 5))
 
 class Level:
-    def __init__(self, level_number):
+    def __init__(self, level_number, difficulty=DIFFICULTY_NORMAL):
         self.level_number = level_number
         self.targets = []
         self.obstacles = []
-        self.projectile_count = 5  # 弾の数を増やす (3→5)
+        self.difficulty = difficulty
+        self.projectile_count = DIFFICULTY_PARAMS[difficulty]["projectile_count"]
         self.projectiles_used = 0
         
         # Set up level based on level number
         self.setup_level()
     
     def setup_level(self):
+        # 難易度に基づく距離係数
+        distance_factor = DIFFICULTY_PARAMS[self.difficulty]["target_distance_factor"]
+        
         if self.level_number == 1:
-            # Level 1: Simple targets - ターゲットをさらに近づける
+            # Level 1: Simple targets - 難易度に応じて距離を調整
+            base_distance = 400  # 基本距離
+            target_distance = int(base_distance * distance_factor)
             self.targets = [
-                Target(400, HEIGHT - 80),
-                Target(450, HEIGHT - 80),
-                Target(500, HEIGHT - 80)
+                Target(target_distance, HEIGHT - 80),
+                Target(target_distance + 50, HEIGHT - 80),
+                Target(target_distance + 100, HEIGHT - 80)
             ]
         elif self.level_number == 2:
-            # Level 2: Targets with obstacles - 配置を調整
+            # Level 2: Targets with obstacles - 難易度に応じて配置を調整
+            base_distance = 450  # 基本距離
+            target_distance = int(base_distance * distance_factor)
             self.targets = [
-                Target(450, HEIGHT - 80),
-                Target(550, HEIGHT - 80)
+                Target(target_distance, HEIGHT - 80),
+                Target(target_distance + 100, HEIGHT - 80)
             ]
             self.obstacles = [
-                Obstacle(400, HEIGHT - 150, 20, 130),
-                Obstacle(500, HEIGHT - 100, 100, 20)
+                Obstacle(target_distance - 50, HEIGHT - 150, 20, 130),
+                Obstacle(target_distance + 50, HEIGHT - 100, 100, 20)
             ]
         elif self.level_number == 3:
-            # Level 3: More complex arrangement - 配置を調整
+            # Level 3: More complex arrangement - 難易度に応じて配置を調整
+            base_distance = 400  # 基本距離
+            target_distance = int(base_distance * distance_factor)
             self.targets = [
-                Target(400, HEIGHT - 200),
-                Target(500, HEIGHT - 300),
-                Target(600, HEIGHT - 80)
+                Target(target_distance, HEIGHT - 200),
+                Target(target_distance + 100, HEIGHT - 300),
+                Target(target_distance + 200, HEIGHT - 80)
             ]
             self.obstacles = [
                 Obstacle(450, HEIGHT - 150, 20, 130),
@@ -560,7 +604,7 @@ def draw_cloud(screen, x, y):
     screen.blit(cloud_surface, (int(x - 50), int(y - 25)))
     screen.blit(shadow_surface, (int(x - 50), int(y + 20)))
 
-def draw_ui(screen, level, projectile_count, game_state):
+def draw_ui(screen, level, projectile_count, game_state, current_difficulty=DIFFICULTY_NORMAL):
     # Draw level info
     font = pygame.font.SysFont('Arial', 24)
     level_text = font.render(f"Level: {level.level_number}", True, BLACK)
@@ -569,6 +613,11 @@ def draw_ui(screen, level, projectile_count, game_state):
     # Draw projectile count
     projectile_text = font.render(f"Projectiles: {projectile_count}", True, BLACK)
     screen.blit(projectile_text, (20, 50))
+    
+    # Draw difficulty
+    difficulty_names = ["Easy", "Normal", "Hard"]
+    difficulty_text = font.render(f"Difficulty: {difficulty_names[current_difficulty]}", True, BLACK)
+    screen.blit(difficulty_text, (20, 80))
     
     # Draw instructions
     if game_state == AIMING:
@@ -589,24 +638,64 @@ def draw_ui(screen, level, projectile_count, game_state):
     elif game_state == GAME_OVER:
         message_text = font.render("Game Over! Click to restart", True, RED)
         screen.blit(message_text, (WIDTH//2 - message_text.get_width()//2, HEIGHT//2))
+    elif game_state == DIFFICULTY_SELECT:
+        # 難易度選択画面の描画
+        title_font = pygame.font.SysFont('Arial', 36)
+        title_text = title_font.render("Select Difficulty", True, BLACK)
+        screen.blit(title_text, (WIDTH//2 - title_text.get_width()//2, HEIGHT//4))
+        
+        button_width, button_height = 200, 50
+        button_margin = 20
+        button_y = HEIGHT//2 - button_height//2
+        
+        # 難易度ボタンの描画
+        for i, diff_name in enumerate(["Easy", "Normal", "Hard"]):
+            button_x = WIDTH//2 - button_width//2
+            button_y_offset = button_y + i * (button_height + button_margin)
+            
+            # ボタンの背景
+            button_color = (200, 200, 200)
+            if i == current_difficulty:  # 選択中の難易度を強調
+                button_color = (150, 200, 150)
+            
+            pygame.draw.rect(screen, button_color, (button_x, button_y_offset, button_width, button_height))
+            pygame.draw.rect(screen, BLACK, (button_x, button_y_offset, button_width, button_height), 2)
+            
+            # ボタンのテキスト
+            button_text = font.render(diff_name, True, BLACK)
+            screen.blit(button_text, (button_x + button_width//2 - button_text.get_width()//2, 
+                                     button_y_offset + button_height//2 - button_text.get_height()//2))
+        
+        # 説明テキスト
+        instruction_text = font.render("Click to select difficulty", True, BLACK)
+        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, HEIGHT * 3//4))
 
 def main():
     clock = pygame.time.Clock()
     
+    # 難易度の初期設定
+    current_difficulty = DIFFICULTY_NORMAL
+    
+    # 物理パラメータの設定
+    global GRAVITY, FRICTION, ELASTICITY
+    GRAVITY = DIFFICULTY_PARAMS[current_difficulty]["gravity"]
+    FRICTION = DIFFICULTY_PARAMS[current_difficulty]["friction"]
+    ELASTICITY = DIFFICULTY_PARAMS[current_difficulty]["elasticity"]
+    
     # Initialize game objects
     slingshot = Slingshot(100, HEIGHT - 100)
-    current_level = Level(1)
+    current_level = Level(1, current_difficulty)
     projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
     projectile_count = current_level.projectile_count
     
-    game_state = AIMING
+    game_state = DIFFICULTY_SELECT  # 最初は難易度選択画面から始める
     dragging = False
     next_shot_timer = 0  # 次の弾のタイマーを追加
     
     # Function to restart the game
     def restart_game():
         nonlocal current_level, projectile, projectile_count, game_state
-        current_level = Level(1)
+        current_level = Level(1, current_difficulty)
         projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
         projectile_count = current_level.projectile_count
         game_state = AIMING
@@ -618,6 +707,22 @@ def main():
         projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
         game_state = AIMING
         print("New projectile set")  # デバッグ用
+    
+    # Function to apply difficulty settings
+    def apply_difficulty_settings():
+        nonlocal current_level, projectile, projectile_count, game_state
+        global GRAVITY, FRICTION, ELASTICITY
+        
+        # 物理パラメータの更新
+        GRAVITY = DIFFICULTY_PARAMS[current_difficulty]["gravity"]
+        FRICTION = DIFFICULTY_PARAMS[current_difficulty]["friction"]
+        ELASTICITY = DIFFICULTY_PARAMS[current_difficulty]["elasticity"]
+        
+        # レベルとプロジェクタイルの再初期化
+        current_level = Level(1, current_difficulty)
+        projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
+        projectile_count = current_level.projectile_count
+        game_state = AIMING
     
     # Game loop
     running = True
@@ -635,16 +740,43 @@ def main():
                         if projectile_count > 0:
                             set_next_projectile()
                             print("Space pressed: New projectile set")  # デバッグ用
+                # 難易度選択のキーボードショートカット
+                elif event.key == pygame.K_1 and game_state == DIFFICULTY_SELECT:
+                    current_difficulty = DIFFICULTY_EASY
+                elif event.key == pygame.K_2 and game_state == DIFFICULTY_SELECT:
+                    current_difficulty = DIFFICULTY_NORMAL
+                elif event.key == pygame.K_3 and game_state == DIFFICULTY_SELECT:
+                    current_difficulty = DIFFICULTY_HARD
+                elif event.key == pygame.K_RETURN and game_state == DIFFICULTY_SELECT:
+                    apply_difficulty_settings()
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if game_state == AIMING and not projectile.launched:
-                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                
+                if game_state == DIFFICULTY_SELECT:
+                    # 難易度選択ボタンのクリック判定
+                    button_width, button_height = 200, 50
+                    button_margin = 20
+                    button_y = HEIGHT//2 - button_height//2
+                    
+                    for i in range(3):  # 3つの難易度
+                        button_x = WIDTH//2 - button_width//2
+                        button_y_offset = button_y + i * (button_height + button_margin)
+                        
+                        # ボタン領域内のクリックをチェック
+                        if (button_x <= mouse_x <= button_x + button_width and 
+                            button_y_offset <= mouse_y <= button_y_offset + button_height):
+                            current_difficulty = i
+                            apply_difficulty_settings()
+                            break
+                
+                elif game_state == AIMING and not projectile.launched:
                     # Check if clicked near the projectile
                     if math.sqrt((mouse_x - projectile.x)**2 + (mouse_y - projectile.y)**2) < 50:
                         dragging = True
                 elif game_state == LEVEL_COMPLETE:
                     # Go to next level
-                    current_level = Level(current_level.level_number + 1)
+                    current_level = Level(current_level.level_number + 1, current_difficulty)
                     projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
                     projectile_count = current_level.projectile_count
                     game_state = AIMING
@@ -656,7 +788,8 @@ def main():
                 dragging = False
                 # Launch projectile
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                power = min(30, math.sqrt((mouse_x - slingshot.x)**2 + (mouse_y - (slingshot.y - slingshot.height//2))**2) / 6)  # パワーをさらに増加
+                power_factor = DIFFICULTY_PARAMS[current_difficulty]["power_factor"]
+                power = min(30, math.sqrt((mouse_x - slingshot.x)**2 + (mouse_y - (slingshot.y - slingshot.height//2))**2) / power_factor)
                 angle = math.atan2((slingshot.y - slingshot.height//2) - mouse_y, slingshot.x - mouse_x)
                 
                 projectile.vel_x = math.cos(angle) * power
@@ -719,17 +852,18 @@ def main():
         # Draw everything
         draw_background(screen)
         
-        # Draw slingshot
-        slingshot.draw(screen, projectile if game_state == AIMING and not projectile.launched else None)
-        
-        # Draw level objects
-        current_level.draw(screen)
-        
-        # Draw projectile
-        projectile.draw(screen)
+        if game_state != DIFFICULTY_SELECT:
+            # Draw slingshot
+            slingshot.draw(screen, projectile if game_state == AIMING and not projectile.launched else None)
+            
+            # Draw level objects
+            current_level.draw(screen)
+            
+            # Draw projectile
+            projectile.draw(screen)
         
         # Draw UI
-        draw_ui(screen, current_level, projectile_count, game_state)
+        draw_ui(screen, current_level, projectile_count, game_state, current_difficulty)
         
         # Draw aiming line
         if game_state == AIMING and dragging and not projectile.launched:
@@ -737,7 +871,8 @@ def main():
                             (projectile.x, projectile.y), 2)
             
             # Draw projected trajectory (simple prediction)
-            power = min(30, math.sqrt((projectile.x - slingshot.x)**2 + (projectile.y - (slingshot.y - slingshot.height//2))**2) / 6)
+            power_factor = DIFFICULTY_PARAMS[current_difficulty]["power_factor"]
+            power = min(30, math.sqrt((projectile.x - slingshot.x)**2 + (projectile.y - (slingshot.y - slingshot.height//2))**2) / power_factor)
             angle = math.atan2((slingshot.y - slingshot.height//2) - projectile.y, slingshot.x - projectile.x)
             vel_x = math.cos(angle) * power
             vel_y = math.sin(angle) * power
