@@ -24,9 +24,9 @@ BROWN = (139, 69, 19)
 SKY_BLUE = (135, 206, 235)
 
 # Physics parameters
-GRAVITY = 0.5
-FRICTION = 0.99
-ELASTICITY = 0.8
+GRAVITY = 0.4  # 重力を少し弱く
+FRICTION = 0.98  # 摩擦を少し減らす
+ELASTICITY = 0.85  # 弾性を高める
 
 # Game states
 AIMING = 0
@@ -224,28 +224,28 @@ class Level:
     
     def setup_level(self):
         if self.level_number == 1:
-            # Level 1: Simple targets
+            # Level 1: Simple targets - ターゲットを少し近づける
             self.targets = [
-                Target(600, HEIGHT - 80),
-                Target(650, HEIGHT - 80),
-                Target(700, HEIGHT - 80)
+                Target(500, HEIGHT - 80),
+                Target(550, HEIGHT - 80),
+                Target(600, HEIGHT - 80)
             ]
         elif self.level_number == 2:
-            # Level 2: Targets with obstacles
+            # Level 2: Targets with obstacles - 配置を調整
             self.targets = [
-                Target(600, HEIGHT - 80),
-                Target(700, HEIGHT - 80)
+                Target(550, HEIGHT - 80),
+                Target(650, HEIGHT - 80)
             ]
             self.obstacles = [
-                Obstacle(550, HEIGHT - 150, 20, 130),
-                Obstacle(650, HEIGHT - 100, 100, 20)
+                Obstacle(500, HEIGHT - 150, 20, 130),
+                Obstacle(600, HEIGHT - 100, 100, 20)
             ]
         elif self.level_number == 3:
-            # Level 3: More complex arrangement
+            # Level 3: More complex arrangement - 配置を調整
             self.targets = [
-                Target(500, HEIGHT - 200),
-                Target(600, HEIGHT - 300),
-                Target(700, HEIGHT - 80)
+                Target(450, HEIGHT - 200),
+                Target(550, HEIGHT - 300),
+                Target(650, HEIGHT - 80)
             ]
             self.obstacles = [
                 Obstacle(450, HEIGHT - 150, 20, 130),
@@ -373,7 +373,7 @@ def main():
                 dragging = False
                 # Launch projectile
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                power = min(15, math.sqrt((mouse_x - slingshot.x)**2 + (mouse_y - (slingshot.y - slingshot.height//2))**2) / 10)
+                power = min(25, math.sqrt((mouse_x - slingshot.x)**2 + (mouse_y - (slingshot.y - slingshot.height//2))**2) / 8)  # パワーを増加
                 angle = math.atan2((slingshot.y - slingshot.height//2) - mouse_y, slingshot.x - mouse_x)
                 
                 projectile.vel_x = math.cos(angle) * power
@@ -386,7 +386,7 @@ def main():
         if game_state == AIMING and dragging and not projectile.launched:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             # Limit the drag distance
-            max_drag = 100
+            max_drag = 150  # ドラッグ距離を増加
             dx = slingshot.x - mouse_x
             dy = (slingshot.y - slingshot.height//2) - mouse_y
             distance = math.sqrt(dx*dx + dy*dy)
