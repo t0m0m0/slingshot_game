@@ -3,6 +3,7 @@ import math
 import sys
 import os
 import random  # Added missing import for random module
+from ui_helpers import draw_rounded_rect, draw_button  # UIヘルパー関数をインポート
 
 # Get the base directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,6 +25,11 @@ BROWN = (139, 69, 19)
 SKY_BLUE = (135, 206, 235)
 ORANGE = (255, 165, 0)  # 弾のトレイル用
 YELLOW = (255, 255, 0)  # 効果用
+GRAY = (200, 200, 200)  # UIの背景用
+DARK_GRAY = (100, 100, 100)  # UIのテキスト用
+LIGHT_BLUE = (173, 216, 230)  # ボタンの色
+LIGHT_GREEN = (144, 238, 144)  # 選択されたボタンの色
+TRANSPARENT_BLACK = (0, 0, 0, 180)  # 半透明の黒（オーバーレイ用）
 
 # Physics parameters
 GRAVITY = 0.3  # さらに重力を弱く
@@ -605,70 +611,155 @@ def draw_cloud(screen, x, y):
     screen.blit(shadow_surface, (int(x - 50), int(y + 20)))
 
 def draw_ui(screen, level, projectile_count, game_state, current_difficulty=DIFFICULTY_NORMAL):
-    # Draw level info
-    font = pygame.font.SysFont('Arial', 24)
-    level_text = font.render(f"Level: {level.level_number}", True, BLACK)
-    screen.blit(level_text, (20, 20))
+    # UI用のフォント
+    title_font = pygame.font.SysFont('Arial', 36)
+    header_font = pygame.font.SysFont('Arial', 24)
+    info_font = pygame.font.SysFont('Arial', 20)
     
-    # Draw projectile count
-    projectile_text = font.render(f"Projectiles: {projectile_count}", True, BLACK)
-    screen.blit(projectile_text, (20, 50))
+    # 半透明のトップバー
+    top_bar_height = 60
+    top_bar_surface = pygame.Surface((WIDTH, top_bar_height), pygame.SRCALPHA)
+    top_bar_surface.fill((0, 0, 0, 100))  # 半透明の黒
+    screen.blit(top_bar_surface, (0, 0))
     
-    # Draw difficulty
-    difficulty_names = ["Easy", "Normal", "Hard"]
-    difficulty_text = font.render(f"Difficulty: {difficulty_names[current_difficulty]}", True, BLACK)
-    screen.blit(difficulty_text, (20, 80))
+    # ゲーム情報パネル（左側）
+    info_panel_width = 200
+    info_panel_height = 120
+    info_panel_x = 20
+    info_panel_y = 70
     
-    # Draw instructions
-    if game_state == AIMING:
-        instruction_text = font.render("Drag to aim and release to fire", True, BLACK)
-        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 20))
-    elif game_state == WAITING_FOR_NEXT_SHOT:
-        instruction_text = font.render("Next shot coming...", True, BLACK)
-        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 20))
-    
-    # Draw restart instruction
-    restart_text = font.render("Press 'R' to restart game", True, BLACK)
-    screen.blit(restart_text, (WIDTH - restart_text.get_width() - 20, 20))
-    
-    # Draw game state messages
-    if game_state == LEVEL_COMPLETE:
-        message_text = font.render("Level Complete! Click to continue", True, GREEN)
-        screen.blit(message_text, (WIDTH//2 - message_text.get_width()//2, HEIGHT//2))
-    elif game_state == GAME_OVER:
-        message_text = font.render("Game Over! Click to restart", True, RED)
-        screen.blit(message_text, (WIDTH//2 - message_text.get_width()//2, HEIGHT//2))
-    elif game_state == DIFFICULTY_SELECT:
-        # 難易度選択画面の描画
-        title_font = pygame.font.SysFont('Arial', 36)
-        title_text = title_font.render("Select Difficulty", True, BLACK)
-        screen.blit(title_text, (WIDTH//2 - title_text.get_width()//2, HEIGHT//4))
+    if game_state != DIFFICULTY_SELECT:
+        # 情報パネルの背景
+        info_panel_surface = pygame.Surface((info_panel_width, info_panel_height), pygame.SRCALPHA)
+        info_panel_surface.fill((255, 255, 255, 180))  # 半透明の白
+        draw_rounded_rect(info_panel_surface, (255, 255, 255, 180), (0, 0, info_panel_width, info_panel_height), radius=10)
+        screen.blit(info_panel_surface, (info_panel_x, info_panel_y))
         
-        button_width, button_height = 200, 50
+        # レベル情報
+        level_text = header_font.render(f"Level: {level.level_number}", True, BLACK)
+        screen.blit(level_text, (info_panel_x + 15, info_panel_y + 15))
+        
+        # 弾の数
+        projectile_text = info_font.render(f"Projectiles: {projectile_count}", True, BLACK)
+        screen.blit(projectile_text, (info_panel_x + 15, info_panel_y + 50))
+        
+        # 難易度
+        difficulty_names = ["Easy", "Normal", "Hard"]
+        difficulty_colors = [(0, 200, 0), (0, 0, 200), (200, 0, 0)]
+        difficulty_text = info_font.render(f"Difficulty: ", True, BLACK)
+        diff_name_text = info_font.render(f"{difficulty_names[current_difficulty]}", True, difficulty_colors[current_difficulty])
+        
+        screen.blit(difficulty_text, (info_panel_x + 15, info_panel_y + 80))
+        screen.blit(diff_name_text, (info_panel_x + 15 + difficulty_text.get_width(), info_panel_y + 80))
+    
+    # 指示テキスト（中央上部）
+    if game_state == AIMING:
+        instruction_text = header_font.render("Drag to aim and release to fire", True, WHITE)
+        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 15))
+    elif game_state == WAITING_FOR_NEXT_SHOT:
+        instruction_text = header_font.render("Next shot coming...", True, WHITE)
+        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 15))
+    
+    # リスタート指示（右上）
+    if game_state != DIFFICULTY_SELECT:
+        restart_text = info_font.render("Press 'R' to restart", True, WHITE)
+        screen.blit(restart_text, (WIDTH - restart_text.get_width() - 20, 20))
+    
+    # ゲーム状態メッセージ
+    if game_state == LEVEL_COMPLETE or game_state == GAME_OVER:
+        # 半透明のオーバーレイ
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 150))  # 半透明の黒
+        screen.blit(overlay, (0, 0))
+        
+        # メッセージパネル
+        panel_width, panel_height = 400, 200
+        panel_x = WIDTH//2 - panel_width//2
+        panel_y = HEIGHT//2 - panel_height//2
+        
+        # パネルの背景
+        draw_rounded_rect(screen, (255, 255, 255, 230), (panel_x, panel_y, panel_width, panel_height), radius=15)
+        
+        if game_state == LEVEL_COMPLETE:
+            # レベルクリアメッセージ
+            message_text = title_font.render("Level Complete!", True, GREEN)
+            screen.blit(message_text, (WIDTH//2 - message_text.get_width()//2, panel_y + 50))
+            
+            # 続行指示
+            continue_text = header_font.render("Click to continue", True, BLACK)
+            screen.blit(continue_text, (WIDTH//2 - continue_text.get_width()//2, panel_y + 120))
+        elif game_state == GAME_OVER:
+            # ゲームオーバーメッセージ
+            message_text = title_font.render("Game Over!", True, RED)
+            screen.blit(message_text, (WIDTH//2 - message_text.get_width()//2, panel_y + 50))
+            
+            # リスタート指示
+            restart_text = header_font.render("Click to restart", True, BLACK)
+            screen.blit(restart_text, (WIDTH//2 - restart_text.get_width()//2, panel_y + 120))
+    
+    elif game_state == DIFFICULTY_SELECT:
+        # 半透明のオーバーレイ
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 100))  # 半透明の黒
+        screen.blit(overlay, (0, 0))
+        
+        # タイトルパネル
+        panel_width, panel_height = 500, 400
+        panel_x = WIDTH//2 - panel_width//2
+        panel_y = HEIGHT//2 - panel_height//2
+        
+        # パネルの背景
+        draw_rounded_rect(screen, (255, 255, 255, 230), (panel_x, panel_y, panel_width, panel_height), radius=15)
+        
+        # タイトル
+        game_title = title_font.render("Slingshot Physics Game", True, BLACK)
+        screen.blit(game_title, (WIDTH//2 - game_title.get_width()//2, panel_y + 30))
+        
+        # サブタイトル
+        subtitle = header_font.render("Select Difficulty", True, DARK_GRAY)
+        screen.blit(subtitle, (WIDTH//2 - subtitle.get_width()//2, panel_y + 80))
+        
+        # 難易度ボタン
+        button_width, button_height = 300, 50
         button_margin = 20
-        button_y = HEIGHT//2 - button_height//2
+        button_x = WIDTH//2 - button_width//2
+        button_y = panel_y + 130
+        
+        # マウス位置を取得
+        mouse_x, mouse_y = pygame.mouse.get_pos()
         
         # 難易度ボタンの描画
-        for i, diff_name in enumerate(["Easy", "Normal", "Hard"]):
-            button_x = WIDTH//2 - button_width//2
-            button_y_offset = button_y + i * (button_height + button_margin)
-            
-            # ボタンの背景
-            button_color = (200, 200, 200)
-            if i == current_difficulty:  # 選択中の難易度を強調
-                button_color = (150, 200, 150)
-            
-            pygame.draw.rect(screen, button_color, (button_x, button_y_offset, button_width, button_height))
-            pygame.draw.rect(screen, BLACK, (button_x, button_y_offset, button_width, button_height), 2)
-            
-            # ボタンのテキスト
-            button_text = font.render(diff_name, True, BLACK)
-            screen.blit(button_text, (button_x + button_width//2 - button_text.get_width()//2, 
-                                     button_y_offset + button_height//2 - button_text.get_height()//2))
+        difficulty_names = ["Easy", "Normal", "Hard"]
+        difficulty_descriptions = [
+            "Lower gravity, more projectiles",
+            "Balanced gameplay",
+            "Higher gravity, fewer projectiles"
+        ]
         
-        # 説明テキスト
-        instruction_text = font.render("Click to select difficulty", True, BLACK)
-        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, HEIGHT * 3//4))
+        colors = {"BLACK": BLACK, "LIGHT_BLUE": LIGHT_BLUE, "LIGHT_GREEN": LIGHT_GREEN}
+        
+        for i, (diff_name, diff_desc) in enumerate(zip(difficulty_names, difficulty_descriptions)):
+            button_y_pos = button_y + i * (button_height + button_margin)
+            
+            # ボタンの領域
+            button_rect = (button_x, button_y_pos, button_width, button_height)
+            
+            # マウスがボタン上にあるかチェック
+            is_hovered = (button_x <= mouse_x <= button_x + button_width and 
+                         button_y_pos <= mouse_y <= button_y_pos + button_height)
+            
+            # ボタンを描画
+            draw_button(screen, diff_name, button_rect, header_font, colors,
+                       is_selected=(i == current_difficulty), 
+                       is_hovered=is_hovered)
+            
+            # 難易度の説明
+            desc_text = info_font.render(diff_desc, True, DARK_GRAY)
+            screen.blit(desc_text, (WIDTH//2 - desc_text.get_width()//2, button_y_pos + button_height + 5))
+        
+        # 操作説明
+        key_text = info_font.render("Press 1-3 to select, ENTER to start", True, DARK_GRAY)
+        screen.blit(key_text, (WIDTH//2 - key_text.get_width()//2, panel_y + panel_height - 40))
 
 def main():
     clock = pygame.time.Clock()
