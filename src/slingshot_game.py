@@ -310,6 +310,10 @@ def draw_ui(screen, level, projectile_count, game_state):
         instruction_text = font.render("Drag to aim and release to fire", True, BLACK)
         screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 20))
     
+    # Draw restart instruction
+    restart_text = font.render("Press 'R' to restart game", True, BLACK)
+    screen.blit(restart_text, (WIDTH - restart_text.get_width() - 20, 20))
+    
     # Draw game state messages
     if game_state == LEVEL_COMPLETE:
         message_text = font.render("Level Complete! Click to continue", True, GREEN)
@@ -330,12 +334,24 @@ def main():
     game_state = AIMING
     dragging = False
     
+    # Function to restart the game
+    def restart_game():
+        nonlocal current_level, projectile, projectile_count, game_state
+        current_level = Level(1)
+        projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
+        projectile_count = current_level.projectile_count
+        game_state = AIMING
+    
     # Game loop
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # Restart game when 'R' is pressed
+                    restart_game()
             
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if game_state == AIMING and not projectile.launched:
@@ -351,10 +367,7 @@ def main():
                     game_state = AIMING
                 elif game_state == GAME_OVER:
                     # Restart game
-                    current_level = Level(1)
-                    projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
-                    projectile_count = current_level.projectile_count
-                    game_state = AIMING
+                    restart_game()
             
             if event.type == pygame.MOUSEBUTTONUP and dragging:
                 dragging = False
