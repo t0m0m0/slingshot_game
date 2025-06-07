@@ -24,9 +24,9 @@ BROWN = (139, 69, 19)
 SKY_BLUE = (135, 206, 235)
 
 # Physics parameters
-GRAVITY = 0.4  # 重力を少し弱く
-FRICTION = 0.98  # 摩擦を少し減らす
-ELASTICITY = 0.85  # 弾性を高める
+GRAVITY = 0.3  # さらに重力を弱く
+FRICTION = 0.97  # 摩擦をさらに減らす
+ELASTICITY = 0.9  # 弾性をさらに高める
 
 # Game states
 AIMING = 0
@@ -216,7 +216,7 @@ class Level:
         self.level_number = level_number
         self.targets = []
         self.obstacles = []
-        self.projectile_count = 3  # Number of projectiles available
+        self.projectile_count = 5  # 弾の数を増やす (3→5)
         self.projectiles_used = 0
         
         # Set up level based on level number
@@ -224,28 +224,28 @@ class Level:
     
     def setup_level(self):
         if self.level_number == 1:
-            # Level 1: Simple targets - ターゲットを少し近づける
+            # Level 1: Simple targets - ターゲットをさらに近づける
             self.targets = [
-                Target(500, HEIGHT - 80),
-                Target(550, HEIGHT - 80),
-                Target(600, HEIGHT - 80)
+                Target(400, HEIGHT - 80),
+                Target(450, HEIGHT - 80),
+                Target(500, HEIGHT - 80)
             ]
         elif self.level_number == 2:
             # Level 2: Targets with obstacles - 配置を調整
             self.targets = [
-                Target(550, HEIGHT - 80),
-                Target(650, HEIGHT - 80)
+                Target(450, HEIGHT - 80),
+                Target(550, HEIGHT - 80)
             ]
             self.obstacles = [
-                Obstacle(500, HEIGHT - 150, 20, 130),
-                Obstacle(600, HEIGHT - 100, 100, 20)
+                Obstacle(400, HEIGHT - 150, 20, 130),
+                Obstacle(500, HEIGHT - 100, 100, 20)
             ]
         elif self.level_number == 3:
             # Level 3: More complex arrangement - 配置を調整
             self.targets = [
-                Target(450, HEIGHT - 200),
-                Target(550, HEIGHT - 300),
-                Target(650, HEIGHT - 80)
+                Target(400, HEIGHT - 200),
+                Target(500, HEIGHT - 300),
+                Target(600, HEIGHT - 80)
             ]
             self.obstacles = [
                 Obstacle(450, HEIGHT - 150, 20, 130),
@@ -373,7 +373,7 @@ def main():
                 dragging = False
                 # Launch projectile
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                power = min(25, math.sqrt((mouse_x - slingshot.x)**2 + (mouse_y - (slingshot.y - slingshot.height//2))**2) / 8)  # パワーを増加
+                power = min(30, math.sqrt((mouse_x - slingshot.x)**2 + (mouse_y - (slingshot.y - slingshot.height//2))**2) / 6)  # パワーをさらに増加
                 angle = math.atan2((slingshot.y - slingshot.height//2) - mouse_y, slingshot.x - mouse_x)
                 
                 projectile.vel_x = math.cos(angle) * power
@@ -446,13 +446,13 @@ def main():
                             (projectile.x, projectile.y), 2)
             
             # Draw projected trajectory (simple prediction)
-            power = min(15, math.sqrt((projectile.x - slingshot.x)**2 + (projectile.y - (slingshot.y - slingshot.height//2))**2) / 10)
+            power = min(30, math.sqrt((projectile.x - slingshot.x)**2 + (projectile.y - (slingshot.y - slingshot.height//2))**2) / 6)
             angle = math.atan2((slingshot.y - slingshot.height//2) - projectile.y, slingshot.x - projectile.x)
             vel_x = math.cos(angle) * power
             vel_y = math.sin(angle) * power
             
             # Draw trajectory dots
-            for t in range(1, 20):
+            for t in range(1, 30):  # 予測軌道を長くする (20→30)
                 # Simple physics prediction (not accounting for bounces)
                 pred_x = projectile.x + vel_x * t
                 pred_y = projectile.y + vel_y * t + 0.5 * GRAVITY * t * t
@@ -462,7 +462,7 @@ def main():
                     break
                 
                 # Draw prediction dot
-                alpha = 255 - t * 10
+                alpha = 255 - t * 8  # 透明度の減少を緩やかに (10→8)
                 if alpha > 0:
                     dot_surface = pygame.Surface((6, 6), pygame.SRCALPHA)
                     pygame.draw.circle(dot_surface, (200, 200, 200, alpha), (3, 3), 3)
