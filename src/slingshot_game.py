@@ -526,16 +526,15 @@ def draw_background(screen):
     ground_rect = pygame.Rect(0, HEIGHT - 20, WIDTH, 20)
     pygame.draw.rect(screen, (100, 80, 0), ground_rect)
     
-    # Add some grass with animation
+    # Add some grass (静的な草に戻す)
     for i in range(0, WIDTH, 5):
         grass_height = random.randint(3, 7)
-        grass_sway = math.sin(pygame.time.get_ticks() / 500 + i / 20) * 2  # 揺れる効果
         grass_color = (50, 150 + random.randint(-20, 20), 50)
         pygame.draw.line(
             screen, 
             grass_color, 
             (i, HEIGHT - 20), 
-            (i + grass_sway, HEIGHT - 20 - grass_height), 
+            (i, HEIGHT - 20 - grass_height), 
             2
         )
 
