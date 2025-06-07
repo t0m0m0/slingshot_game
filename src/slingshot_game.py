@@ -33,6 +33,7 @@ AIMING = 0
 PROJECTILE_IN_MOTION = 1
 LEVEL_COMPLETE = 2
 GAME_OVER = 3
+WAITING_FOR_NEXT_SHOT = 4  # 新しいゲーム状態を追加
 
 class Projectile:
     def __init__(self, x, y, radius=15):
@@ -309,6 +310,9 @@ def draw_ui(screen, level, projectile_count, game_state):
     if game_state == AIMING:
         instruction_text = font.render("Drag to aim and release to fire", True, BLACK)
         screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 20))
+    elif game_state == WAITING_FOR_NEXT_SHOT:
+        instruction_text = font.render("Next shot coming...", True, BLACK)
+        screen.blit(instruction_text, (WIDTH//2 - instruction_text.get_width()//2, 20))
     
     # Draw restart instruction
     restart_text = font.render("Press 'R' to restart game", True, BLACK)
@@ -352,6 +356,15 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:  # Restart game when 'R' is pressed
                     restart_game()
+                elif event.key == pygame.K_SPACE and game_state == WAITING_FOR_NEXT_SHOT:  # スペースキーでも次の弾を発射可能に
+                    projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
+                    game_state = AIMING
+                    pygame.time.set_timer(pygame.USEREVENT, 0)  # タイマーをキャンセル
+            
+            if event.type == pygame.USEREVENT and game_state == WAITING_FOR_NEXT_SHOT:
+                projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
+                game_state = AIMING
+                pygame.time.set_timer(pygame.USEREVENT, 0)  # タイマーをキャンセル
             
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if game_state == AIMING and not projectile.launched:
@@ -417,9 +430,9 @@ def main():
             # Check if projectile has stopped
             if projectile.stopped or projectile.x < 0 or projectile.x > WIDTH or projectile.y > HEIGHT:
                 if projectile_count > 0:
-                    # Reset for next shot
-                    projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
-                    game_state = AIMING
+                    # Reset for next shot - 3秒後に自動的に次の弾をセット
+                    pygame.time.set_timer(pygame.USEREVENT, 1000)  # 1秒後にイベント発生
+                    game_state = WAITING_FOR_NEXT_SHOT
                 else:
                     # Check if all targets are hit
                     if not current_level.is_complete():
