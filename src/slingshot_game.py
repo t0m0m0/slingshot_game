@@ -67,8 +67,10 @@ class Projectile:
             self.y += self.vel_y
             
             # Check if projectile has almost stopped
-            if abs(self.vel_x) < 0.1 and abs(self.vel_y) < 0.1 and self.y > HEIGHT - self.radius - 10:
+            if (abs(self.vel_x) < 0.5 and abs(self.vel_y) < 0.5 and self.y > HEIGHT - self.radius - 30) or \
+               (abs(self.vel_x) < 0.2 and abs(self.vel_y) < 0.2):  # 停止判定を緩和
                 self.stopped = True
+                print("Projectile stopped")  # デバッグ用
             
             # Handle screen boundaries
             if self.x - self.radius < 0:
@@ -346,6 +348,14 @@ def main():
         projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
         projectile_count = current_level.projectile_count
         game_state = AIMING
+        print("Game restarted")  # デバッグ用
+    
+    # Function to set next projectile
+    def set_next_projectile():
+        nonlocal projectile, game_state
+        projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
+        game_state = AIMING
+        print("New projectile set")  # デバッグ用
     
     # Game loop
     running = True
@@ -355,11 +365,14 @@ def main():
                 running = False
             
             if event.type == pygame.KEYDOWN:
+                print(f"Key pressed: {pygame.key.name(event.key)}, Game state: {game_state}")  # デバッグ用
                 if event.key == pygame.K_r:  # Restart game when 'R' is pressed
                     restart_game()
-                elif event.key == pygame.K_SPACE and game_state == WAITING_FOR_NEXT_SHOT:  # スペースキーでも次の弾を発射可能に
-                    projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
-                    game_state = AIMING
+                elif event.key == pygame.K_SPACE:  # スペースキーはどの状態でも次の弾を準備
+                    if game_state == WAITING_FOR_NEXT_SHOT or game_state == PROJECTILE_IN_MOTION:
+                        if projectile_count > 0:
+                            set_next_projectile()
+                            print("Space pressed: New projectile set")  # デバッグ用
             
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if game_state == AIMING and not projectile.launched:
@@ -424,19 +437,22 @@ def main():
             
             # Check if projectile has stopped
             if projectile.stopped or projectile.x < 0 or projectile.x > WIDTH or projectile.y > HEIGHT:
+                print(f"Projectile state: stopped={projectile.stopped}, x={projectile.x}, y={projectile.y}")  # デバッグ用
                 if projectile_count > 0:
                     # Reset for next shot - 次の弾への切り替えを開始
                     game_state = WAITING_FOR_NEXT_SHOT
                     next_shot_timer = pygame.time.get_ticks() + 1000  # 現在時刻 + 1000ミリ秒
+                    print(f"Waiting for next shot, timer set to {next_shot_timer}")  # デバッグ用
                 else:
                     # Check if all targets are hit
                     if not current_level.is_complete():
                         game_state = GAME_OVER
         elif game_state == WAITING_FOR_NEXT_SHOT:
             # 次の弾への切り替えタイマーをチェック
-            if pygame.time.get_ticks() >= next_shot_timer:
-                projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
-                game_state = AIMING
+            current_time = pygame.time.get_ticks()
+            if current_time >= next_shot_timer:
+                set_next_projectile()
+                print(f"Timer expired at {current_time}, new projectile set")  # デバッグ用
         
         # Draw everything
         draw_background(screen)
