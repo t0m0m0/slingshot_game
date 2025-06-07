@@ -337,6 +337,7 @@ def main():
     
     game_state = AIMING
     dragging = False
+    next_shot_timer = 0  # 次の弾のタイマーを追加
     
     # Function to restart the game
     def restart_game():
@@ -359,12 +360,6 @@ def main():
                 elif event.key == pygame.K_SPACE and game_state == WAITING_FOR_NEXT_SHOT:  # スペースキーでも次の弾を発射可能に
                     projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
                     game_state = AIMING
-                    pygame.time.set_timer(pygame.USEREVENT, 0)  # タイマーをキャンセル
-            
-            if event.type == pygame.USEREVENT and game_state == WAITING_FOR_NEXT_SHOT:
-                projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
-                game_state = AIMING
-                pygame.time.set_timer(pygame.USEREVENT, 0)  # タイマーをキャンセル
             
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if game_state == AIMING and not projectile.launched:
@@ -430,13 +425,18 @@ def main():
             # Check if projectile has stopped
             if projectile.stopped or projectile.x < 0 or projectile.x > WIDTH or projectile.y > HEIGHT:
                 if projectile_count > 0:
-                    # Reset for next shot - 3秒後に自動的に次の弾をセット
-                    pygame.time.set_timer(pygame.USEREVENT, 1000)  # 1秒後にイベント発生
+                    # Reset for next shot - 次の弾への切り替えを開始
                     game_state = WAITING_FOR_NEXT_SHOT
+                    next_shot_timer = pygame.time.get_ticks() + 1000  # 現在時刻 + 1000ミリ秒
                 else:
                     # Check if all targets are hit
                     if not current_level.is_complete():
                         game_state = GAME_OVER
+        elif game_state == WAITING_FOR_NEXT_SHOT:
+            # 次の弾への切り替えタイマーをチェック
+            if pygame.time.get_ticks() >= next_shot_timer:
+                projectile = Projectile(slingshot.x, slingshot.y - slingshot.height//2)
+                game_state = AIMING
         
         # Draw everything
         draw_background(screen)
