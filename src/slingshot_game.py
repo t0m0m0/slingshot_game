@@ -2,6 +2,7 @@ import pygame
 import math
 import sys
 import os
+import random  # Added missing import for random module
 
 # Get the base directory
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
