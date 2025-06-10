@@ -32,9 +32,9 @@ LIGHT_GREEN = (144, 238, 144)  # 選択されたボタンの色
 TRANSPARENT_BLACK = (0, 0, 0, 180)  # 半透明の黒（オーバーレイ用）
 
 # Physics parameters
-GRAVITY = 0.3  # さらに重力を弱く
+GRAVITY = 0.5  # 重力を強くして弾を重く
 FRICTION = 0.97  # 摩擦をさらに減らす
-ELASTICITY = 0.9  # 弾性をさらに高める
+ELASTICITY = 0.8  # 弾性を下げて重さを表現
 
 # Game states
 AIMING = 0
@@ -52,27 +52,27 @@ DIFFICULTY_HARD = 2
 # 難易度ごとのパラメータ
 DIFFICULTY_PARAMS = {
     DIFFICULTY_EASY: {
-        "gravity": 0.25,
+        "gravity": 0.45,
         "friction": 0.96,
-        "elasticity": 0.9,
+        "elasticity": 0.8,
         "projectile_count": 7,
-        "power_factor": 5.0,  # 小さいほど強い
+        "power_factor": 4.0,  # 小さいほど強い
         "target_distance_factor": 0.7  # 小さいほど近い
     },
     DIFFICULTY_NORMAL: {
-        "gravity": 0.3,
+        "gravity": 0.5,
         "friction": 0.97,
-        "elasticity": 0.85,
+        "elasticity": 0.75,
         "projectile_count": 5,
-        "power_factor": 6.0,
+        "power_factor": 4.5,
         "target_distance_factor": 1.0
     },
     DIFFICULTY_HARD: {
-        "gravity": 0.35,
+        "gravity": 0.6,
         "friction": 0.98,
-        "elasticity": 0.8,
+        "elasticity": 0.7,
         "projectile_count": 3,
-        "power_factor": 7.0,
+        "power_factor": 5.0,
         "target_distance_factor": 1.3
     }
 }
